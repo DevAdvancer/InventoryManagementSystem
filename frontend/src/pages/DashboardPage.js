@@ -22,7 +22,10 @@ function DashboardPage() {
         ]);
         if (cancelled) return;
         setSummary(s);
-        setRecent(orders.slice(0, 5));
+        // Defensive: OrdersAPI.list() already returns an array, but if a
+        // future caller passes a partial payload, fall back to [] rather
+        // than crashing with "orders.slice is not a function".
+        setRecent(Array.isArray(orders) ? orders.slice(0, 5) : []);
       } catch (e) {
         if (!cancelled) setError(e.message);
       } finally {
@@ -94,7 +97,7 @@ function DashboardPage() {
             Manage products →
           </Link>
         </div>
-        {summary?.low_stock_products?.length ? (
+        {Array.isArray(summary?.low_stock_products) && summary.low_stock_products.length ? (
           <div className="list-stack">
             {summary.low_stock_products.map((p) => (
               <div className="list-item" key={p.id}>

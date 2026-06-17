@@ -75,9 +75,15 @@ api.interceptors.response.use(
   }
 );
 
+// ---- Helpers ---------------------------------------------------------------
+// Defensive coercion for the API client. Pages can call .list() and trust
+// the result is iterable; a 200 with a non-array body (or a missing body)
+// no longer crashes the UI with "c.map is not a function".
+const asArray = (data) => (Array.isArray(data) ? data : []);
+
 // ---- Products ----
 export const ProductsAPI = {
-  list: () => api.get("/products").then((r) => r.data),
+  list: () => api.get("/products").then((r) => asArray(r.data)),
   get: (id) => api.get(`/products/${id}`).then((r) => r.data),
   create: (data) => api.post("/products", data).then((r) => r.data),
   update: (id, data) => api.put(`/products/${id}`, data).then((r) => r.data),
@@ -86,7 +92,7 @@ export const ProductsAPI = {
 
 // ---- Customers ----
 export const CustomersAPI = {
-  list: () => api.get("/customers").then((r) => r.data),
+  list: () => api.get("/customers").then((r) => asArray(r.data)),
   get: (id) => api.get(`/customers/${id}`).then((r) => r.data),
   create: (data) => api.post("/customers", data).then((r) => r.data),
   remove: (id) => api.delete(`/customers/${id}`).then((r) => r.data),
@@ -94,11 +100,23 @@ export const CustomersAPI = {
 
 // ---- Orders ----
 export const OrdersAPI = {
-  list: () => api.get("/orders").then((r) => r.data),
+  list: () => api.get("/orders").then((r) => asArray(r.data)),
   get: (id) => api.get(`/orders/${id}`).then((r) => r.data),
   create: (data) => api.post("/orders", data).then((r) => r.data),
   remove: (id) => api.delete(`/orders/${id}`).then((r) => r.data),
-  dashboard: () => api.get("/orders/dashboard/summary").then((r) => r.data),
+  // Dashboard is an object with low_stock_products: Product[]. Provide a
+  // safe default so the dashboard never crashes on a partial payload.
+  dashboard: () =>
+    api.get("/orders/dashboard/summary").then((r) => {
+      const d = r.data || {};
+      return {
+        total_products: d.total_products ?? 0,
+        total_customers: d.total_customers ?? 0,
+        total_orders: d.total_orders ?? 0,
+        total_revenue: d.total_revenue ?? "0.00",
+        low_stock_products: asArray(d.low_stock_products),
+      };
+    }),
 };
 
 export default api;

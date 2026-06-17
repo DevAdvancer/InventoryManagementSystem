@@ -4,7 +4,10 @@ function DataTable({ columns, rows, loading, emptyMessage = "No records yet" }) 
   if (loading) {
     return <div className="table-state">Loading…</div>;
   }
-  if (!rows || rows.length === 0) {
+  // Defensive: if a caller forgets to coerce to an array, render the
+  // empty state instead of crashing with "rows.map is not a function".
+  const safeRows = Array.isArray(rows) ? rows : [];
+  if (safeRows.length === 0) {
     return <div className="table-state">{emptyMessage}</div>;
   }
   return (
@@ -20,7 +23,7 @@ function DataTable({ columns, rows, loading, emptyMessage = "No records yet" }) 
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, i) => (
+          {safeRows.map((row, i) => (
             <tr key={row.id ?? i}>
               {columns.map((c) => (
                 <td key={c.key} style={c.cellStyle || {}}>
