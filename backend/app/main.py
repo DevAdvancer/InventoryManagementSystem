@@ -127,6 +127,14 @@ def create_app() -> FastAPI:
             "status": "ok",
         }
 
+    # Dedicated, dependency-free health endpoint for orchestrators
+    # (Railway, Render, Kubernetes liveness/readiness probes). Returns 200
+    # as soon as uvicorn is accepting connections, with no DB call — so a
+    # transient DB hiccup never causes the healthcheck to flap.
+    @app.get("/health", tags=["Health"])
+    def liveness() -> dict:
+        return {"status": "ok"}
+
     api_prefix = settings.API_V1_PREFIX
     app.include_router(products.router, prefix=api_prefix)
     app.include_router(customers.router, prefix=api_prefix)

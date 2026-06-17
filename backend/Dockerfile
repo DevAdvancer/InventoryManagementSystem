@@ -44,10 +44,12 @@ USER appuser
 
 EXPOSE 8000
 
-# A simple healthcheck that hits our root endpoint.
+# Container-level healthcheck (used by `docker ps` / docker compose).
+# Calls the dedicated /health endpoint, which is dependency-free and
+# returns 200 as soon as uvicorn accepts connections.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request, sys; \
-sys.exit(0) if urllib.request.urlopen('http://localhost:8000/', timeout=3).status == 200 else sys.exit(1)"
+sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else sys.exit(1)"
 
 # Railway (and Render) inject $PORT at runtime. Default to 8000 for local
 # docker-compose / docker run usage.
