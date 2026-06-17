@@ -1,0 +1,50 @@
+# Production-ready Docker Compose.
+#
+# Database lives on Railway Postgres (managed). The backend creates the
+# schema and seeds baseline data automatically on first startup — see
+# backend/app/db/bootstrap.py.
+#
+# Usage:
+#   cp .env.example .env         # fill in DATABASE_URL + REACT_APP_API_URL
+#   docker compose up --build
+#
+# Services:
+#   - backend:   FastAPI on http://localhost:8000  (docs at /docs)
+#   - frontend:  React (nginx) on http://localhost:8080
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ims_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      USE_PGBOUNCER: ${USE_PGBOUNCER:-false}
+      DEBUG: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:-*}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request, sys; \
+sys.exit(0) if urllib.request.urlopen('http://localhost:8000/', timeout=3).status == 200 else sys.exit(1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+    container_name: ims_frontend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-}
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"

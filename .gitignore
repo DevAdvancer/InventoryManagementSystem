@@ -1,0 +1,55 @@
+# =====================================================================
+# .gitignore — keep secrets, build artifacts, and local state out of git
+# =====================================================================
+
+# --- Secrets / local config --------------------------------------------
+# Never commit any .env file. The repo ships .env.example as a template.
+.env
+.env.*
+!.env.example
+
+# Local Claude Code / MCP / editor state — never part of the deliverable.
+.claude/
+.mcp.json
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Python build / cache ---------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node / React build artifacts -------------------------------------
+node_modules/
+frontend/build/
+frontend/.cache/
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+
+# --- Docker / compose local state -------------------------------------
+postgres_data/
+*.log
+
+# --- Coverage / test output -------------------------------------------
+coverage/
+htmlcov/
+.tox/
+.nox/
