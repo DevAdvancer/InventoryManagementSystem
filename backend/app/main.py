@@ -94,6 +94,17 @@ def create_app() -> FastAPI:
             https_url = str(request.url).replace("http://", "https://", 1)
             return RedirectResponse(url=https_url, status_code=301)
         response = await call_next(request)
+        # Belt-and-suspenders: FastAPI's redirect_slashes (the default)
+        # issues 307 with Location: http://... because uvicorn doesn't
+        # know about X-Forwarded-Proto unless we trust the proxy. Even
+        # with --forwarded-allow-ips, rewrite the Location header to
+        # https:// when the client came in over https. Browsers block
+        # http:// redirects from an https:// page as mixed content.
+        forwarded_proto = request.headers.get("x-forwarded-proto", "https")
+        if forwarded_proto == "https":
+            location = response.headers.get("location")
+            if location and location.startswith("http://"):
+                response.headers["location"] = "https://" + location[len("http://"):]
         # Tell the browser to refuse any future plain-http connection
         # for the next year. Cheap, and makes the URL bar show the
         # green/padlock indicator reliably on subsequent visits.
