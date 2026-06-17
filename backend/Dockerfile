@@ -40,6 +40,12 @@ WORKDIR /app
 COPY --from=builder /install /usr/local
 COPY --chown=appuser:appuser app ./app
 
+# Entry script resolves $PORT (Railway / Render inject it) and execs
+# uvicorn. We can't put $PORT in a JSON-array CMD: exec form skips
+# shell expansion and uvicorn would receive the literal "$PORT".
+COPY --chown=appuser:appuser entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 USER appuser
 
 EXPOSE 8000
@@ -51,11 +57,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD python -c "import urllib.request, sys; \
 sys.exit(0) if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status == 200 else sys.exit(1)"
 
-# Railway (and Render) inject $PORT at runtime. Default to 8000 for local
-# docker-compose / docker run usage.
-#
-# Shell form is intentional: it lets /bin/sh expand ${PORT:-8000} before
-# uvicorn sees the args. The JSON-array form below does not always
-# behave the same across Docker runtimes and was the source of the
-# "'$PORT' is not a valid integer" uvicorn error.
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+ENTRYPOINT ["/entrypoint.sh"]
