@@ -10,11 +10,6 @@ const NAV_ITEMS = [
   { to: "/orders", label: "Orders", icon: "🧾" },
 ];
 
-// Tailwind-style breakpoint kept in JS so we can flip the icon class on
-// the hamburger button without re-implementing matchMedia listeners.
-// Matches the `max-width: 900px` rule in global.css.
-const MOBILE_BREAKPOINT = "(max-width: 900px)";
-
 function Layout({ children }) {
   const [configOpen, setConfigOpen] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
