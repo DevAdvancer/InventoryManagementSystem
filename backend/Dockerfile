@@ -51,4 +51,9 @@ sys.exit(0) if urllib.request.urlopen('http://localhost:8000/', timeout=3).statu
 
 # Railway (and Render) inject $PORT at runtime. Default to 8000 for local
 # docker-compose / docker run usage.
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+#
+# Shell form is intentional: it lets /bin/sh expand ${PORT:-8000} before
+# uvicorn sees the args. The JSON-array form below does not always
+# behave the same across Docker runtimes and was the source of the
+# "'$PORT' is not a valid integer" uvicorn error.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
