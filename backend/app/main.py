@@ -76,6 +76,33 @@ def create_app() -> FastAPI:
             content={"detail": "Internal server error while reading data from the database."},
         )
 
+    # ----- HSTS + HTTPS enforcement --------------------------------------
+    # Railway / Render / Vercel all terminate TLS at their edge proxies,
+    # so by the time a request reaches uvicorn it's already http. We
+    # still want the browser to lock in HTTPS for future navigations,
+    # and we want any stray http:// request to be promoted to https://.
+    @app.middleware("http")
+    async def hsts_and_https_redirect(request, call_next):
+        # X-Forwarded-Proto is set by Railway/Vercel/Cloudflare when the
+        # original client hit https://. If the edge didn't terminate
+        # TLS and we received a plain http request, bounce it.
+        if request.url.scheme == "http" and request.headers.get(
+            "x-forwarded-proto", "https"
+        ) != "https":
+            from starlette.responses import RedirectResponse
+
+            https_url = str(request.url).replace("http://", "https://", 1)
+            return RedirectResponse(url=https_url, status_code=301)
+        response = await call_next(request)
+        # Tell the browser to refuse any future plain-http connection
+        # for the next year. Cheap, and makes the URL bar show the
+        # green/padlock indicator reliably on subsequent visits.
+        response.headers.setdefault(
+            "Strict-Transport-Security",
+            "max-age=31536000; includeSubDomains",
+        )
+        return response
+
     # ----- CORS middleware -----------------------------------------------
     # Wildcard origin + credentials is rejected by browsers, so when
     # CORS_ORIGINS=* we use a small middleware to echo the request origin
